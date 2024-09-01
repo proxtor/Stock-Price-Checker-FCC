@@ -10,8 +10,7 @@ const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
 const runner            = require('./test-runner');
 
-require('dotenv').config();
-require('./dbConnect.js');
+require('./dbConnect');
 const app = express();
 
 app.use('/public', express.static(process.cwd() + '/public'));
@@ -37,11 +36,7 @@ app.route('/')
 fccTestingRoutes(app);
 
 //Routing for API 
-apiRoutes(app);  
-
-
-
- 
+apiRoutes(app);   
 
 //404 Not Found Middleware
 app.use(function(req, res, next) {

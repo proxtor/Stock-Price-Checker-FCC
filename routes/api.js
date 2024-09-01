@@ -29,9 +29,16 @@ async function saveStock(stock, like, ip){
     const newStock = await createStock(stock, like, ip);
    // console.log("newStock", newStock)
     return newStock
-  }else{
-    if(like=='true' && hasStock.likes.indexOf(ip)==-1){
-      console.log(hasStock.likes.indexOf(ip))
+  }else{   
+    let hasIp = false;
+    for(let i=0; i < hasStock.likes.length; i++){
+     // console.log(hasStock.likes[i])
+     if(bcrypt.compare(hasStock.likes[i], ip)) 
+       hasIp = true;
+    }
+    console.log(hasIp)
+    if(like=='true' && !hasIp){
+      
       hasStock.likes.push(ip);
       const saved  = await hasStock.save();
      // console.log("saved" , saved)
@@ -39,9 +46,6 @@ async function saveStock(stock, like, ip){
     }else return hasStock
   }
 }
-
-
-
 
 async function fetchStock(stock, callback){
   let url = `https://stock-price-checker-proxy.freecodecamp.rocks/v1/stock/${stock}/quote`;
@@ -57,50 +61,26 @@ async function fetchStock(stock, callback){
     });
 }
 
-
-
-
-/* let https;
-  try {
-  https = require('node:https');
-} catch (err) {
-  console.log('https support is disabled!');
-  }
-  function getPrice(stock, callback){
-     https.
-        get("https://stock-price-checker-proxy.freecodecamp.rocks/v1/stock/aapl/quote", resp =>{
-        let data = "";
-        resp.on("data", dataChunk =>{
-          data += dataChunk;
-          //console.log(data)
-        });
-        resp.on("end", ()=>{
-          let resdata = JSON.parse(data);
-          console.log(resdata)
-          callback(resdata);
-        })
-        })
-  } */
-
-
 module.exports = function (app) {
 
   app.route('/api/stock-prices')
     .get(async function (req, res){
       console.log(req.query, "<------req.query ",req.params,"----params-body----", req.body);
-      if(req.query.stock.length==1){
-         const {  stock, like }  = req.query
+      if(typeof req.query.stock==='string' || req.query.stock  instanceof String ){
+         const { stock, like }  = req.query
       //const {symbol, latestPrice} =
       fetchStock(stock, async (symbol,latestPrice)=>{
-        console.log("symbol", symbol, "lPrice", latestPrice)
+        //console.log("symbol", symbol, "lPrice", latestPrice)
         if(!symbol){
           res.json({stockdata:{likes: like ? 1:0}}); 
           return;
           }
-        const datasaved = await saveStock(symbol, like, req.ip)
-          console.log("stdata",datasaved);
-          console.log(stock, like, datasaved);
-        let likesnum =0;
+        const hash = bcrypt.hashSync(req.ip, 12);
+        console.log("hash",hash)
+        const datasaved = await saveStock(symbol, like, hash)
+         // console.log("stdata", datasaved);
+          //console.log(stock, like, datasaved);
+        let likesnum = 0;
         if(datasaved) {
           likesnum = datasaved.likes.length;
         }else{
@@ -121,33 +101,51 @@ module.exports = function (app) {
          const stock2  = req.query.stock[1]
       //const {symbol, latestPrice} =
         const like = req.query.like
-      fetchStock(stock1, async (symbol,latestPrice)=>{
-        console.log("symbol", symbol, "lPrice", latestPrice)
-        if(!symbol){
+      fetchStock(stock1, async (symbol1, latestPrice1)=>{
+       // console.log("symbol1", symbol1, "lPrice1", latestPrice1)
+        if(!symbol1){
           res.json({stockdata:{likes: like ? 1:0}}); 
           return;
           }
-        const datasaved = await saveStock(symbol, like, req.ip)
-          console.log("stdata",datasaved);
-          console.log(stock, like, datasaved);
-        let likesnum =0;
-        if(datasaved) {
-          likesnum = datasaved.likes.length;
+      fetchStock(stock2, async (symbol2, latestPrice2)=>{
+        //console.log("symbol2", symbol2, "lPrice2", latestPrice2)
+        if(!symbol2){
+          res.json({stockdata:{likes: like ? 1:0}}); 
+          return;
+        }
+        const hash1 = bcrypt.hashSync(req.ip, 12);
+        const datasaved1 = await saveStock(symbol1, like, hash1)
+          //console.log("stdata1",datasaved1);
+          //console.log(stock1, like, datasaved1);
+        let likesnum1 =0;
+        if(datasaved1) {
+          likesnum1 = datasaved1.likes.length;
         }else{
           console.log("error")
         }
-        let response = {
-          stock: symbol,
-          price: latestPrice,
-          likes: likesnum
-          } 
-        res.json({"stockData":response})
+        const datasaved2 = await saveStock(symbol2, like, hash1)
+          //console.log("stdata2", datasaved2);
+          //console.log(stock2, like, datasaved2);
+        let likesnum2 = 0;
+        if(datasaved2) {
+          likesnum2 = datasaved2.likes.length;
+        }else{
+          console.log("error")
+        }
+        let response = [{
+          stock: symbol1,
+          price: latestPrice1,
+          rel_likes: likesnum1-likesnum2
+          }, {
+          stock: symbol2,
+          price: latestPrice2,
+          rel_likes: likesnum2-likesnum1
+          } ]
+        res.json({"stockData":response});
         
       }) ;          
-      } //end two stock query
-           
-
-              
+      })//end two stock query             
         
-      });     
+          
     };
+    })};
