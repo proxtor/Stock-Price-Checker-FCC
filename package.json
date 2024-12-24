@@ -12,14 +12,14 @@
 		"chai": "^4.2.0",
 		"chai-http": "^4.3.0",
 		"cors": "^2.8.1",
-		"dotenv": "^8.2.0",
+		"dotenv": "^8.6.0",
 		"express": "^4.14.0",
 		"helmet": "^3.1.0",
 		"mocha": "^10.0.0",
 		"mongodb": "^4.8.1",
 		"mongoose": "^6.5.0",
 		"node-fetch": "^2.6.7",
-		"npm": "^8.15.1",
+		"npm": "^11.0.0",
 		"xmlhttprequest": "^1.8.0"
 	},
 	"repository": {
